@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.DS_Store
+
+.npm-cache/
+
+__pycache__/
+*.pyc
+
+# Local screenshots and review artifacts
+output/
+docs/terminology-review.json
+docs/full-review-*.md

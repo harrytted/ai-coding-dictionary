@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {createClickSound} from '../src/sound.js';
+const saved=new Map(),storage={getItem:k=>saved.get(k),setItem:(k,v)=>saved.set(k,v)};
+let contexts=0,starts=0,stops=0,disconnected=0;
+const parameter=()=>({setValueAtTime(){},exponentialRampToValueAtTime(){}});
+const context={state:'suspended',currentTime:1,destination:{},async resume(){this.state='running';},async suspend(){this.state='suspended';},createOscillator(){return {frequency:parameter(),connect(){},disconnect(){disconnected++;},start(){starts++;},stop(){stops++;queueMicrotask(()=>this.onended());}};},createGain(){return {gain:parameter(),connect(){},disconnect(){disconnected++;}};}};
+const sound=createClickSound({storage,makeContext:()=>{contexts++;return context;}});
+assert.equal(contexts,0,'加载页面不能创建音频');assert.equal(sound.enabled,true);
+assert.equal(await sound.play(),true);assert.equal(starts,1);assert.equal(stops,1);assert.equal(contexts,1);
+assert.equal(await sound.play(),false,'连续触发要限制叠音');
+assert.equal(sound.toggle(),false);assert.equal(saved.get('dictionary-sound'),'off');assert.equal(await sound.play(),false);
+assert.equal(createClickSound({storage}).enabled,false,'保留静音偏好');
+assert.equal(sound.toggle(),true);context.currentTime=2;assert.equal(await sound.play(),true);assert.equal(contexts,1,'复用音频上下文');
+await Promise.resolve();assert.equal(disconnected,4,'每次音效后断开音频节点');
+assert.equal(await createClickSound({storage,makeContext:()=>null}).play(),false,'不支持音频时正常使用页面');
+console.log('通过：音效延迟初始化、音量包络、短音结束、快速点击限流、静音与偏好持久化、上下文复用和兼容降级。');

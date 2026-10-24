@@ -1,0 +1,15 @@
+{
+  "name": "ai-coding-dictionary",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "check": "node scripts/check-data.mjs && node scripts/check-motion.mjs && node scripts/check-force.mjs && node scripts/check-layout.mjs && node scripts/check-label-priority.mjs && node scripts/check-sound.mjs && node scripts/check-home-labels.mjs && node scripts/check-terminology.mjs"
+  },
+  "devDependencies": {
+    "vite": "^5.4.21"
+  }
+}
