@@ -12,7 +12,7 @@ curl --fail --location --retry 2 --connect-timeout 15 --max-time 120 \
 tar -xzf "$work_dir/source.tar.gz" -C "$work_dir"
 cd "$work_dir"/ai-coding-dictionary-*
 npm ci --registry=https://registry.npmjs.org --cache "$work_dir/npm-cache" --no-audit --no-fund
-npm run build -- --base=/dictionary/
+VITE_STATS_API_BASE=/dictionary/api npm run build -- --base=/dictionary/
 cp -a dist/. "$release_root/releases/$release_id/"
 printf '%s\n' "$release_id" > "$release_root/pending-release"
 printf 'BUILD_READY %s\n' "$release_root/releases/$release_id"

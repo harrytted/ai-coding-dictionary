@@ -152,3 +152,14 @@ h1,h2{text-wrap:balance}
 }
 
 @media(max-width:360px){.toolbar{gap:6px;left:12px;right:12px}.toolbar .brand{font-size:13px;padding:0 2px}.toolbar .round{width:34px;height:34px}}
+
+/* Server-backed visit totals stay quiet and readable beside the canvas controls. */
+.footer-info{min-width:0;display:flex;flex-direction:column;gap:5px}
+.explore-footer .footer-info .graph-hint{max-width:none}
+.site-stats{font-size:12px;line-height:1.6;color:var(--ink);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+@media(max-width:760px){
+ .explore-footer:has(.site-stats:not([hidden])){flex-wrap:wrap;gap:8px}
+ .explore-footer:has(.site-stats:not([hidden])) .footer-info{flex:1 0 100%}
+ .footer-info:has(.site-stats[hidden]){display:none}
+ .site-stats{font-size:12px}
+}

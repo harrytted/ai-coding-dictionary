@@ -1,4 +1,5 @@
 import './style.css';
+import { showStats } from './stats.js';
 import { createClickSound } from './sound.js';
 import { approach, along, spring } from './motion.js';
 import { ForceGraph } from './force.js';
@@ -25,7 +26,7 @@ $('#app').innerHTML = `
   <div class="intro"><span class="eyebrow">从一个词，理解整个系统</span><h1>AI 编程，<br>有迹可循。</h1><p>71 个概念，7 个主题。</p></div>
   <div id="graph" class="graph"><svg id="network" tabindex="-1" viewBox="0 0 1000 800" role="group" aria-label="AI 编程术语关系图" aria-keyshortcuts="+ - 0"><g id="edges"></g><g id="nodes"></g><g id="labels" aria-hidden="true"></g></svg></div>
   <div id="list-view" class="list-view" hidden></div>
-  <footer class="explore-footer"><div class="graph-hint">点击探索<span> · </span>滚动缩放<span> · </span>拖动平移</div><div class="view-tools"><button class="round" id="reset-view" aria-label="复位画板" title="复位画板">${svgIcon('reset')}</button><button class="round" id="random" aria-label="随机探索一个术语" title="随机探索">${svgIcon('shuffle')}</button><button class="round" id="toggle-view" aria-label="切换列表视图" title="图谱 / 列表">${svgIcon('list')}</button><button class="round" id="theme" aria-label="切换配色" title="纸白 / 墨黑 / 分类色">${svgIcon('palette')}</button></div></footer>
+  <footer class="explore-footer"><div class="footer-info"><div class="graph-hint">点击探索<span> · </span>滚动缩放<span> · </span>拖动平移</div><div id="site-stats" class="site-stats" hidden aria-live="polite" title="从统计功能启用后开始累计。每次打开或刷新页面计一次访问，切换词条不重复计数。访客按浏览器匿名标识估算，换设备或清理浏览器数据会重新计数。"></div></div><div class="view-tools"><button class="round" id="reset-view" aria-label="复位画板" title="复位画板">${svgIcon('reset')}</button><button class="round" id="random" aria-label="随机探索一个术语" title="随机探索">${svgIcon('shuffle')}</button><button class="round" id="toggle-view" aria-label="切换列表视图" title="图谱 / 列表">${svgIcon('list')}</button><button class="round" id="theme" aria-label="切换配色" title="纸白 / 墨黑 / 分类色">${svgIcon('palette')}</button></div></footer>
   <nav class="categories" aria-label="术语分类"><button data-category="all" class="active" aria-pressed="true">全部 <span>71</span></button>${categories.map(c => `<button data-category="${c.id}" aria-pressed="false"><i style="--dot:${c.color}"></i>${c.name}</button>`).join('')}</nav>
  </section>
  <aside class="detail" id="definition" aria-label="词条释义" tabindex="-1" hidden></aside>
@@ -324,3 +325,5 @@ function updateSoundButton(){
 }
 $('#sound').onclick=()=>{const enabled=clickSound.toggle();updateSoundButton();if(enabled)void clickSound.play();};
 updateSoundButton();
+
+void showStats($('#site-stats'),import.meta.env.VITE_STATS_API_BASE);

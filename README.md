@@ -11,6 +11,7 @@
 - 中英文及别名搜索、分类筛选、列表视图和词条直达链接。
 - 图谱平移、缩放、暂停、复位及点击音效开关。
 - 三种配色，支持桌面、手机和减少动态效果设置。
+- 可选服务器访问统计：累计访问次数、按匿名浏览器标识去重的累计访客数。
 
 ## 本地运行
 
@@ -39,6 +40,8 @@ npm run preview -- --port 5183
 npm run build -- --base=/dictionary/
 ```
 
+默认本地运行不连接统计服务。启用统计时，构建前设置 `VITE_STATS_API_BASE=/dictionary/api`；服务端检查可运行 `npm run check:stats`（需要 Python 3.6+）。
+
 服务器部署与回滚说明见 [deploy/README.md](deploy/README.md)。
 
 ## 项目结构
@@ -48,6 +51,7 @@ npm run build -- --base=/dictionary/
 - `src/force.js`、`src/layout.js`、`src/motion.js`：节点运动与标签布局。
 - `src/sound.js`、`src/style.css`：音效与界面样式。
 - `scripts/`：自动检查脚本。
+- `server/stats.py`：使用 SQLite 持久保存访问统计的可选服务。
 - `deploy/`：服务器部署脚本与说明。
 
 ## 内容来源

@@ -19,6 +19,20 @@ original = config.read_text()
 marker = ' location / {\n'
 if original.count(marker) != 1:
     raise SystemExit('Unexpected Nginx configuration; inspect before changing it')
+api_route = ''' location = /dictionary/api/stats {
+  proxy_pass http://127.0.0.1:8871/stats;
+  proxy_read_timeout 10s;
+  proxy_connect_timeout 3s;
+  access_log off;
+ }
+ location = /dictionary/api/visit {
+  proxy_pass http://127.0.0.1:8871/visit;
+  proxy_read_timeout 10s;
+  proxy_connect_timeout 3s;
+  client_max_body_size 1k;
+  access_log off;
+ }
+'''
 route = ''' location = /dictionary { return 301 /dictionary/$is_args$args; }
  location ^~ /dictionary/ {
   alias /var/www/ai-coding-dictionary/current/;
@@ -28,6 +42,9 @@ route = ''' location = /dictionary { return 301 /dictionary/$is_args$args; }
  }
 '''
 has_route = route.strip() in original
+has_api = api_route.strip() in original
+if 'location = /dictionary/api/' in original and not has_api:
+    raise SystemExit('Existing statistics route differs; inspect it first')
 if 'location ^~ /dictionary/' in original and not has_route:
     raise SystemExit('Existing dictionary route differs; inspect it first')
 backup_dir = root / 'backups'
@@ -44,16 +61,23 @@ if pending.is_symlink():
 os.symlink(target, pending)
 os.replace(pending, current)
 try:
+    subprocess.run(['curl', '--fail', '--silent', '--show-error', '--max-time', '10', 'http://127.0.0.1:8871/stats'], check=True)
     if shutil.which('restorecon'):
         subprocess.run(['restorecon', '-RF', str(root)], check=True)
+    updated = original
     if not has_route:
-        config.write_text(original.replace(marker, route + marker, 1))
+        updated = updated.replace(marker, route + marker, 1)
+    if not has_api:
+        updated = updated.replace(marker, api_route + marker, 1)
+    if updated != original:
+        config.write_text(updated)
     subprocess.run(['nginx', '-t'], check=True)
     subprocess.run(['systemctl', 'reload', 'nginx'], check=True)
     # reload returns before replacement workers necessarily accept connections.
     time.sleep(2)
     url = 'https://agent.harrylab.cn/dictionary/'
     html = subprocess.check_output(['curl', '--fail', '--silent', '--show-error', '--max-time', '15', '--resolve', 'agent.harrylab.cn:443:127.0.0.1', url], universal_newlines=True)
+    subprocess.run(['curl', '--fail', '--silent', '--show-error', '--max-time', '15', '--resolve', 'agent.harrylab.cn:443:127.0.0.1', url + 'api/stats'], check=True)
     assets = re.findall(r'(?:src|href)="(/dictionary/assets/[^"]+)"', html)
     if len(assets) < 2:
         raise RuntimeError('Expected CSS and JS asset paths')

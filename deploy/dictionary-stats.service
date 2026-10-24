@@ -1,0 +1,20 @@
+[Unit]
+Description=AI coding dictionary visit statistics
+After=network.target
+
+[Service]
+Type=simple
+User=dictionary-stats
+Group=dictionary-stats
+ExecStart=/usr/bin/python3 /opt/ai-coding-dictionary-stats/stats.py
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/ai-coding-dictionary-stats
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
