@@ -23,8 +23,10 @@ python3 deploy/activate-release.py
 
 ## 访问统计
 
-统计从启用后开始累计，不补造历史数据。每次打开或刷新页面计一次访问，切换词条不重复计数。访客按浏览器本地保存的随机匿名标识去重；换设备、清理浏览器数据或禁用存储会影响去重，因此访客数是估算值，不是精确人数。
+累计数据从统计启用后持续保留，不补造历史数据；今日数据按北京时间（Asia/Shanghai，UTC+8）统计，每日零点切换。前端每分钟通过只读接口更新显示，不增加访问次数。每次打开或刷新页面计一次访问，切换词条不重复计数。访客按浏览器本地保存的随机匿名标识去重；换设备、清理浏览器数据或禁用存储会影响去重，因此访客数是估算值，不是精确人数。
 
 统计接口不记录 IP、账号或完整浏览历史。SQLite 数据库保存在 `/var/lib/ai-coding-dictionary-stats/stats.sqlite3`，独立于前端发布目录，更新页面和重启服务不会清零。需单独备份此目录；不要将运行中的数据库加入 Git。
 
 服务管理：`systemctl status dictionary-stats`、`systemctl restart dictionary-stats`。健康检查：`curl http://127.0.0.1:8871/stats`。前端部署脚本自动设置 `VITE_STATS_API_BASE=/dictionary/api`，访问接口走同域 Nginx 反向代理。服务异常时页面显示“访问统计暂不可用”，词典仍可正常使用。
+
+升级已有累计统计时，默认保留累计数据，日统计从升级后开始。仅当能够确定全部旧数据属于同一日期时，可在首次升级时使用 `STATS_LEGACY_DAY=YYYY-MM-DD bash deploy/install-stats.sh` 将旧数据归入该日；迁移只执行一次，不会覆盖已有日统计。

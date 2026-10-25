@@ -2,6 +2,7 @@
 """Small same-origin, persistent visit counter. Compatible with Python 3.6+."""
 import argparse
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 import hashlib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
@@ -11,18 +12,33 @@ import socketserver
 import sqlite3
 
 
+def shanghai_day(now=None):
+    now = now or datetime.now(timezone.utc)
+    return now.astimezone(timezone(timedelta(hours=8))).strftime('%Y-%m-%d')
+
+
 class Store:
-    def __init__(self, path):
+    def __init__(self, path, today=shanghai_day, legacy_day=None):
         self.path = str(path)
+        self.today = today
+        if legacy_day:
+            datetime.strptime(legacy_day, '%Y-%m-%d')
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:
             db.execute('PRAGMA journal_mode=WAL')
+            had_daily = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='daily_totals'").fetchone()
             db.executescript('''
+                BEGIN IMMEDIATE;
                 CREATE TABLE IF NOT EXISTS visitors (id TEXT PRIMARY KEY);
                 CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY);
                 CREATE TABLE IF NOT EXISTS totals (id INTEGER PRIMARY KEY, visits INTEGER NOT NULL);
                 INSERT OR IGNORE INTO totals VALUES (1, 0);
+                CREATE TABLE IF NOT EXISTS daily_totals (day TEXT PRIMARY KEY, visits INTEGER NOT NULL);
+                CREATE TABLE IF NOT EXISTS daily_visitors (day TEXT NOT NULL, id TEXT NOT NULL, PRIMARY KEY(day,id));
             ''')
+            if legacy_day and not had_daily:
+                db.execute('INSERT INTO daily_totals SELECT ?,visits FROM totals WHERE id=1', (legacy_day,))
+                db.execute('INSERT INTO daily_visitors SELECT ?,id FROM visitors', (legacy_day,))
 
     @contextmanager
     def connect(self):
@@ -33,9 +49,14 @@ class Store:
         finally:
             db.close()
 
-    def stats(self, db):
+    def stats(self, db, day=None):
+        day = day or self.today()
+        daily = db.execute('SELECT visits FROM daily_totals WHERE day=?', (day,)).fetchone()
         return {'visits': db.execute('SELECT visits FROM totals WHERE id=1').fetchone()[0],
-                'visitors': db.execute('SELECT COUNT(*) FROM visitors').fetchone()[0]}
+                'visitors': db.execute('SELECT COUNT(*) FROM visitors').fetchone()[0],
+                'today_visits': daily[0] if daily else 0,
+                'today_visitors': db.execute('SELECT COUNT(*) FROM daily_visitors WHERE day=?', (day,)).fetchone()[0],
+                'date': day, 'timezone': 'Asia/Shanghai'}
 
     def read(self):
         with self.connect() as db:
@@ -45,13 +66,17 @@ class Store:
     def visit(self, visitor, event):
         visitor = hashlib.sha256(visitor.encode('ascii')).hexdigest()
         event = hashlib.sha256(event.encode('ascii')).hexdigest()
+        day = self.today()
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
             added = db.execute('INSERT OR IGNORE INTO events VALUES (?)', (event,)).rowcount
             if added:
                 db.execute('INSERT OR IGNORE INTO visitors VALUES (?)', (visitor,))
                 db.execute('UPDATE totals SET visits=visits+1 WHERE id=1')
-            return self.stats(db)
+                db.execute('INSERT OR IGNORE INTO daily_totals VALUES (?,0)', (day,))
+                db.execute('UPDATE daily_totals SET visits=visits+1 WHERE day=?', (day,))
+                db.execute('INSERT OR IGNORE INTO daily_visitors VALUES (?,?)', (day, visitor))
+            return self.stats(db, day)
 
 
 class Server(socketserver.ThreadingMixIn, HTTPServer):
@@ -114,5 +139,9 @@ if __name__ == '__main__':
     parser.add_argument('--port', type=int, default=8871)
     parser.add_argument('--db', default='/var/lib/ai-coding-dictionary-stats/stats.sqlite3')
     parser.add_argument('--origin', default='https://agent.harrylab.cn')
+    parser.add_argument('--migrate-legacy-day', help='One-time migration, only when all legacy visits are known to belong to this day')
     args = parser.parse_args()
+    if args.migrate_legacy_day:
+        print(json.dumps(Store(args.db, legacy_day=args.migrate_legacy_day).read()))
+        raise SystemExit(0)
     create_server('127.0.0.1', args.port, Store(args.db), args.origin).serve_forever()
