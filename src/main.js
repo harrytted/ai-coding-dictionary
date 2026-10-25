@@ -10,7 +10,8 @@ const $ = s => document.querySelector(s);
 const icon = (type) => ({sound:'<path d="m11 5-6 4H2v6h3l6 4V5Z"/><path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',muted:'<path d="m11 5-6 4H2v6h3l6 4V5Z"/><path d="m16 9 6 6m0-6-6 6"/>',search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',close:'<path d="m6 6 12 12M6 18 18 6"/>',prev:'<path d="m14 5-7 7 7 7"/>',next:'<path d="m10 5 7 7-7 7"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.1M3 12h.1M3 18h.1"/>',graph:'<circle cx="12" cy="12" r="3"/><circle cx="4" cy="4" r="2"/><circle cx="20" cy="5" r="2"/><circle cx="5" cy="20" r="2"/><path d="m6 6 4 4m4-1 4-3M7 18l3-4"/>',palette:'<circle cx="8" cy="8" r=".7"/><circle cx="14" cy="6" r=".7"/><circle cx="18" cy="10" r=".7"/><path d="M12 22a10 10 0 1 1 10-10c0 4-5 1-6 4-1 2 2 6-4 6Z"/>',link:'<path d="m9 15 6-6M8 17l-2 2a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0m2-1 2-2a4 4 0 0 1 6 6l-5 5a4 4 0 0 1-6 0" transform="translate(1 0) scale(.92)"/>',pause:'<path d="M9 5v14M15 5v14"/>',play:'<path d="m8 5 11 7-11 7V5Z"/>',reset:'<path d="M3 10a9 9 0 1 1 2 8M3 4v6h6"/>',shuffle:'<path d="M3 6h3l12 12h3m-4-4 4 4-4 4M3 18h3l4-4m4-4 4-4h3m-4-4 4 4-4 4"/>'}[type] || '') ;
 const svgIcon = type => `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon(type)}</svg>`;
 const clickSound=createClickSound();
-let current = terms.find(t => t.id === new URLSearchParams(location.search).get('term')) || null;
+const termFromLocation=()=>new URLSearchParams(location.search).get('term')||location.pathname.match(/\/terms\/([^/]+)\/?$/)?.[1];
+let current = terms.find(t => t.id === termFromLocation()) || null;
 let category = 'all';
 let view = 'graph';
 let theme = 'paper';
@@ -246,10 +247,14 @@ function select(id, focus=false, push=true){
  current=terms.find(t=>t.id===id)||null;
  if (current && category!=='all' && current.category!==category) setCategory('all',false);
  cameraTarget={x:0,y:0,k:1};
- if(push){const url=new URL(location.href);current?url.searchParams.set('term',current.id):url.searchParams.delete('term');history.pushState({},'',url);}
+ if(push){const url=new URL(location.href);url.pathname=import.meta.env.BASE_URL+(current?`terms/${current.id}/`:'');url.searchParams.delete('term');history.pushState({},'',url);}
  $('.workspace').classList.toggle('has-detail',!!current);
  renderGraph();renderDetail();renderList();
  document.title=current?`${current.name} · ${current.en} | AI 编程词典`:'AI 编程词典 · 中文版';
+ const canonical='https://agent.harrylab.cn'+import.meta.env.BASE_URL+(current?`terms/${current.id}/`:'');
+ const description=current?`${current.name}（${current.en}）：${current.summary}`:'用中文理解 AI 编程的 71 个核心术语。探索模型、智能体、上下文、工具、记忆与协作之间的联系。';
+ for(const [selector,attribute,value] of [['meta[name=description]','content',description],['link[rel=canonical]','href',canonical],['meta[property="og:title"]','content',document.title],['meta[property="og:description"]','content',description],['meta[property="og:url"]','content',canonical]]) {const el=document.querySelector(selector);if(el)el.setAttribute(attribute,value);}
+ const schema=document.querySelector('#term-schema');if(schema)schema.textContent=JSON.stringify(current?{'@context':'https://schema.org','@type':'DefinedTerm',name:current.name,alternateName:current.en,description:current.summary,url:canonical}:{'@context':'https://schema.org','@type':'DefinedTermSet',name:'AI 编程词典',url:canonical});
  $('.skip').href=current?'#definition':'#network';$('.skip').textContent=current?'跳至词条内容':'跳至关系图';
  if(focus&&current){const focusedId=current.id;$('#definition').focus({preventScroll:true});requestAnimationFrame(()=>{if(current?.id===focusedId&&!document.querySelector('dialog[open]'))$('#definition').focus({preventScroll:true});});}
 }
@@ -299,7 +304,7 @@ document.addEventListener('keydown',e=>{
  if(e.key==='Escape'&&current){select(null);$('#home').focus();}
  if(current&&document.activeElement===document.body&&['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();select(terms[(terms.indexOf(current)+(e.key==='ArrowRight'?1:-1)+terms.length)%terms.length].id);}
 });
-window.addEventListener('popstate',()=>select(new URLSearchParams(location.search).get('term'),false,false));
+window.addEventListener('popstate',()=>select(termFromLocation(),false,false));
 let drag=null,wasDragged=false;
 $('#network').addEventListener('pointerdown',e=>{if(e.button!==0)return;drag={x:e.clientX,y:e.clientY,tx:transform.x,ty:transform.y};wasDragged=false;});
 window.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>5){wasDragged=true;const r=$('#network').getBoundingClientRect();const scale=Math.max(scene.width/r.width,scene.height/r.height);transform.x=drag.tx+dx*scale;transform.y=drag.ty+dy*scale;applyTransform();}});
