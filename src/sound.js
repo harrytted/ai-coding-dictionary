@@ -1,4 +1,4 @@
-// A quiet, locally synthesized tap. No network request or audio file is needed.
+// A clear, locally synthesized tap. No network request or audio file is needed.
 export function createClickSound({storage=globalThis.localStorage,makeContext=()=>{
  const AudioContext=globalThis.AudioContext||globalThis.webkitAudioContext;
  return AudioContext?new AudioContext():null;
@@ -15,15 +15,15 @@ export function createClickSound({storage=globalThis.localStorage,makeContext=()
    if(now-lastClick<.045)return false;
    lastClick=now;
    const voice=context.createOscillator(),gain=context.createGain();
-   voice.type='sine';
-   voice.frequency.setValueAtTime(780,now);
-   voice.frequency.exponentialRampToValueAtTime(360,now+.055);
+   voice.type='triangle';
+   voice.frequency.setValueAtTime(1040,now);
+   voice.frequency.exponentialRampToValueAtTime(620,now+.135);
    gain.gain.setValueAtTime(.0001,now);
-   gain.gain.exponentialRampToValueAtTime(.07,now+.004);
-   gain.gain.exponentialRampToValueAtTime(.0001,now+.075);
+   gain.gain.exponentialRampToValueAtTime(.16,now+.006);
+   gain.gain.exponentialRampToValueAtTime(.0001,now+.12);
    voice.connect(gain);gain.connect(context.destination);
    voice.onended=()=>{voice.disconnect();gain.disconnect();};
-   voice.start(now);voice.stop(now+.08);
+   voice.start(now);voice.stop(now+.13);
    return true;
   }catch{return false;}
  }
