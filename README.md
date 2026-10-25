@@ -53,7 +53,3 @@ npm run build -- --base=/dictionary/
 - `scripts/`：自动检查脚本。
 - `server/stats.py`：使用 SQLite 持久保存访问统计的可选服务。
 - `deploy/`：服务器部署脚本与说明。
-
-## 内容来源
-
-术语范围与分类参考 [The AI Coding Dictionary](https://www.aicodingdictionary.com/)。中文释义、示例及代码独立编写，本项目并非官方译本。关系连线表示概念联系，不表示严格技术依赖；部分经验性用语的具体含义以词条说明为准。
