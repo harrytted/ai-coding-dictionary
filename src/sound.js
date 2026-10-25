@@ -17,7 +17,7 @@ export function createClickSound({storage=globalThis.localStorage,makeContext=()
    const voice=context.createOscillator(),gain=context.createGain();
    voice.type='triangle';
    voice.frequency.setValueAtTime(1040,now);
-   voice.frequency.exponentialRampToValueAtTime(620,now+.135);
+   voice.frequency.exponentialRampToValueAtTime(620,now+.085);
    gain.gain.setValueAtTime(.0001,now);
    gain.gain.exponentialRampToValueAtTime(.16,now+.006);
    gain.gain.exponentialRampToValueAtTime(.0001,now+.12);
