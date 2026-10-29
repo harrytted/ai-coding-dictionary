@@ -53,9 +53,3 @@ npm run build -- --base=/dictionary/
 - `scripts/`：自动检查脚本。
 - `server/stats.py`：使用 SQLite 持久保存访问统计的可选服务。
 - `deploy/`：服务器部署脚本与说明。
-
-## 搜索收录
-
-构建时为每个词条生成 `terms/<id>/index.html`，包含独立标题、描述、规范链接、中英文正文、示例、关联链接及 DefinedTerm 结构化数据，无需执行 JavaScript 即可读取。首页提供完整词条目录。旧的 `?term=<id>` 链接继续可用，规范链接指向词条独立路径。
-
-站点地图：<https://agent.harrylab.cn/dictionary/sitemap.xml>。可将此地址提交到搜索引擎站长工具。`/dictionary/robots.txt` 提供同样的地图地址；域名根目录的 robots.txt 由主站维护，不应禁止抓取 `/dictionary/`。提交不保证收录。
